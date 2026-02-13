@@ -1,0 +1,20 @@
+#!/bin/bash
+# Launcher for Espin GUI (double-click .app). Resolves project root: espin.app/Contents/MacOS/espin -> project root.
+set -e
+DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$(dirname "$(dirname "$(dirname "$DIR")")")"
+VENV_PYTHON="$PROJECT_ROOT/.venv/bin/python3"
+GUI_SCRIPT="$PROJECT_ROOT/espin_gui.py"
+
+if [ ! -f "$VENV_PYTHON" ]; then
+    osascript -e "display alert \"Espin\" message \"Espin needs to be set up first.\n\nIn Terminal, go to the folder that contains espin.app and run:\n  uv sync\n\nThen double-click Espin again.\" as critical"
+    exit 1
+fi
+
+if [ ! -f "$GUI_SCRIPT" ]; then
+    osascript -e "display alert \"Espin\" message \"espin_gui.py not found. Keep espin.app inside the espin project folder.\" as critical"
+    exit 1
+fi
+
+cd "$PROJECT_ROOT"
+exec "$VENV_PYTHON" "$GUI_SCRIPT"

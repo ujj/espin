@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>
+    <string>Espin</string>
+    <key>CFBundleDisplayName</key>
+    <string>Espin</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.espin.app</string>
+    <key>CFBundleVersion</key>
+    <string>1.0</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+    <key>CFBundleExecutable</key>
+    <string>espin</string>
+    <key>CFBundleIconFile</key>
+    <string>espin.icns</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>11.0</string>
+    <key>LSUIElement</key>
+    <true/>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Espin needs microphone access to transcribe your voice.</string>
+    <key>NSAppleEventsUsageDescription</key>
+    <string>Espin needs Accessibility access to type transcribed text.</string>
+</dict>
+</plist>
