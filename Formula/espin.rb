@@ -2,38 +2,47 @@ class Espin < Formula
   desc "Local Streaming ASR for Coding Agents on macOS"
   homepage "https://github.com/ujj/espin"
   url "https://github.com/ujj/espin/archive/refs/tags/v1.0.0.tar.gz"
-  sha256 "0019dfc4b32d63c1392aa264aed2253c1e0c2fb09216f8e2cc269bbfb8bb49b5"
+  sha256 "b0e289fa04103f2b5f8236e87ed6b49a2acf78031d26e24195eddb1e87764bf7"
   license "MIT"
 
   depends_on "python@3.11"
   depends_on "uv"
 
   def install
-    # Install project files into libexec so the .app launcher can find them
-    # (launcher resolves "project root" = 3 dirnames up from espin.app/Contents/MacOS/espin = libexec)
     libexec.install "espin_gui.py", "pyproject.toml", "uv.lock", "README.md"
     libexec.install "espin"
-    libexec.install "espin.app"
 
-    # Create .venv and install dependencies in libexec (no user uv needed)
-    system "uv", "sync", chdir: libexec
+    (bin/"espin-gui").write <<~SH
+      #!/bin/bash
+      exec "#{libexec}/.venv/bin/espin-gui" "$@"
+    SH
 
-    # CLI: symlink venv scripts so `espin` and `espin-gui` work from terminal
-    bin.install_symlink (libexec/".venv/bin/espin") => "espin"
-    bin.install_symlink (libexec/".venv/bin/espin-gui") => "espin-gui"
+    (bin/"espin").write <<~SH
+      #!/bin/bash
+      exec "#{libexec}/.venv/bin/espin" "$@"
+    SH
+  end
 
-    # Symlink app for `open espin.app` from prefix
-    bin.install_symlink libexec/"espin.app" => "espin.app"
+  def post_install
+    cd libexec do
+      system "uv", "sync", "--no-cache"
+    end
+
+    ohai "Downloading Whisper model (~1.5 GB, first time only)..."
+    system libexec/".venv/bin/python", "-c",
+      "from huggingface_hub import snapshot_download; snapshot_download('mlx-community/whisper-medium')"
   end
 
   def caveats
     <<~EOS
-      Espin requires Accessibility and Microphone permissions.
-      After installing, open Espin (double-click or: open espin.app).
-      In System Settings → Privacy & Security, grant:
-      - Accessibility (for typing transcribed text)
-      - Microphone (for recording)
-      to "Espin".
+      To start Espin:
+        espin-gui
+
+      Then press Ctrl+Option+Space to toggle recording.
+
+      Permissions: Grant your terminal app (Terminal, WezTerm, iTerm, etc.)
+      Accessibility and Microphone access in:
+        System Settings → Privacy & Security
     EOS
   end
 

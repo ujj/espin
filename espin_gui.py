@@ -91,6 +91,9 @@ class EspinAppDelegate(NSObject):
         self.state = EspinState()
         self.audio = AudioRecorder(on_level=self._on_audio_level)
         self.asr = ASREngine()
+        print("Loading Whisper model (first run may download ~1.5 GB)...", file=sys.stderr)
+        self.asr._load_model()
+        print("Model ready.", file=sys.stderr)
         self.injector = Injector()
         self.hotkey = HotkeyListener(on_toggle=self._on_hotkey_toggle)
         return self
@@ -103,17 +106,22 @@ class EspinAppDelegate(NSObject):
                 self._rms_history.pop(0)
 
     def _on_hotkey_toggle(self):
+        print(f"[HOTKEY] Toggle pressed, state={'idle' if self.state.is_idle else 'recording'}", file=sys.stderr)
         if self.state.is_idle:
             self._start_recording()
         else:
             threading.Thread(target=self._stop_recording, daemon=True).start()
 
     def _start_recording(self):
+        print("[REC] Starting recording...", file=sys.stderr)
         if not self.state.start_recording():
+            print("[REC] State transition failed", file=sys.stderr)
             return
         if not self.audio.start():
+            print("[REC] Audio start failed", file=sys.stderr)
             self.state.cancel()
             return
+        print("[REC] Recording started", file=sys.stderr)
         self._recording_start_time = time.time()
         self._level_bar_history = []
         _play_sound(SOUND_START)
@@ -133,18 +141,26 @@ class EspinAppDelegate(NSObject):
             return
         self.audio.stop()
         _play_sound(SOUND_STOP)
-        audio = self.audio.get_recent_audio(self.audio.audio_length)
+        audio_len = self.audio.audio_length
+        audio = self.audio.get_recent_audio(audio_len)
+        print(f"[REC] Stopped. Audio: {len(audio)/16000:.2f}s ({len(audio)} samples)", file=sys.stderr)
         if len(audio) < 1600:
+            print("[REC] Too short, skipping", file=sys.stderr)
             self.state.stop()
             self._hide_window()
             return
         try:
+            print("[ASR] Transcribing...", file=sys.stderr)
             hypothesis = self.asr.transcribe(audio)
-        except Exception:
+            print(f"[ASR] Result: '{hypothesis}'", file=sys.stderr)
+        except Exception as e:
+            print(f"[ASR] Error: {e}", file=sys.stderr)
             hypothesis = ""
         self.state.stop()
         if hypothesis:
             self.injector.type_text(hypothesis)
+        else:
+            print("[ASR] Empty result, nothing to inject", file=sys.stderr)
         self._hide_window()
 
     def _format_time(self, seconds):
